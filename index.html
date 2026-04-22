@@ -13,11 +13,11 @@
 body {
 background: #0a0a0a;
 overflow: hidden;
-font-family: ‘Bebas Neue’, sans-serif;
+font-family: 'Bebas Neue', sans-serif;
 }
 
 body::before {
-content: ‘’;
+content: '';
 position: fixed;
 inset: 0;
 background-image:
@@ -75,7 +75,7 @@ padding: 3vmin;
 }
 
 .label {
-font-family: ‘Bebas Neue’, sans-serif;
+font-family: 'Bebas Neue', sans-serif;
 letter-spacing: 0.3em;
 text-transform: uppercase;
 opacity: 0.55;
@@ -85,7 +85,7 @@ flex-shrink: 0;
 }
 
 .time-display {
-font-family: ‘Share Tech Mono’, monospace;
+font-family: 'Share Tech Mono', monospace;
 line-height: 1;
 cursor: pointer;
 transition: opacity 0.15s;
@@ -100,7 +100,7 @@ flex-shrink: 0;
 #now-display:hover    { opacity: 1; }
 
 .time-input {
-font-family: ‘Share Tech Mono’, monospace;
+font-family: 'Share Tech Mono', monospace;
 line-height: 1;
 background: transparent;
 border: none;
@@ -140,6 +140,9 @@ width: 100%;
 </div>
 
 <script>
+  // Fraction of the quadrant width that each time display should fill
+  const FILL = 0.75;
+
   // Binary-search the largest font size where el fits within maxW x maxH
   function fitText(el, maxW, maxH) {
     let lo = 4, hi = 2000;
@@ -151,7 +154,7 @@ width: 100%;
       else hi = mid;
     }
     el.style.fontSize = lo + 'px';
-    return lo*0.75;
+    return lo;
   }
 
   function resize() {
@@ -163,18 +166,18 @@ width: 100%;
     const halfW = W / 2 - PAD * 2;
     const halfH = H / 2 - PAD;   // only bottom padding (top has no pad)
 
-    // 1. Fit the TIME to fill the quadrant width, capped at ~80% of quadrant height
-    const startSize = fitText(document.getElementById('start-display'), halfW, halfH * 0.82);
-    const endSize   = fitText(document.getElementById('end-display'),   halfW, halfH * 0.82);
+    // Times fill FILL fraction of the quadrant width, capped at ~80% of quadrant height
+    const startSize = fitText(document.getElementById('start-display'), halfW * FILL, halfH * 0.82);
+    const endSize   = fitText(document.getElementById('end-display'),   halfW * FILL, halfH * 0.82);
 
-    // 2. Label is 25% of the time font size
+    // Label is 25% of the time font size
     document.getElementById('start-label').style.fontSize = (startSize * 0.25) + 'px';
     document.getElementById('end-label').style.fontSize   = (endSize   * 0.25) + 'px';
 
     // NOW — full width, bottom half
     const fullW = W - PAD * 2;
     const nowH  = H / 2 - PAD * 2;
-    const nowSize = fitText(document.getElementById('now-display'), fullW, nowH * 0.82);
+    const nowSize = fitText(document.getElementById('now-display'), fullW * FILL, nowH * 0.82);
     document.getElementById('now-label').style.fontSize = (nowSize * 0.25) + 'px';
   }
 
