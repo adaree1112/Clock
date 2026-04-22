@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Timer</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+background: #0a0a0a;
+min-height: 100vh;
+display: grid;
+grid-template-columns: 1fr 1fr;
+grid-template-rows: 1fr 1fr;
+grid-template-areas:
+“start end”
+“now   now”;
+overflow: hidden;
+font-family: ‘Bebas Neue’, sans-serif;
+}
+
+/* Subtle grid texture */
+body::before {
+content: ‘’;
+position: fixed;
+inset: 0;
+background-image:
+linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+background-size: 60px 60px;
+pointer-events: none;
+z-index: 0;
+}
+
+.corner {
+position: relative;
+z-index: 1;
+padding: 5vw;
+display: flex;
+flex-direction: column;
+gap: 0.2em;
+}
+
+.label {
+font-size: clamp(1.2rem, 4vw, 3.5rem);
+letter-spacing: 0.3em;
+text-transform: uppercase;
+opacity: 0.6;
+}
+
+.time-display {
+font-family: ‘Share Tech Mono’, monospace;
+font-size: clamp(2rem, 8vw, 9rem);
+line-height: 1;
+cursor: pointer;
+transition: opacity 0.15s;
+position: relative;
+display: inline-block;
+width: fit-content;
+}
+
+.time-display:hover { opacity: 0.75; }
+
+.time-display::after {
+content: ‘✎’;
+font-family: sans-serif;
+font-size: 0.25em;
+position: absolute;
+top: 0.3em;
+right: -1.4em;
+opacity: 0;
+transition: opacity 0.2s;
+}
+.time-display:hover::after { opacity: 0.5; }
+
+/* Editing state */
+.time-input {
+font-family: ‘Share Tech Mono’, monospace;
+font-size: clamp(2rem, 8vw, 9rem);
+line-height: 1;
+background: transparent;
+border: none;
+border-bottom: 0.04em solid currentColor;
+outline: none;
+width: 5.5ch;
+padding: 0;
+caret-color: currentColor;
+}
+
+/* Start — top left, green */
+#start-corner {
+grid-area: start;
+align-items: flex-start;
+justify-content: flex-end;
+color: #39e86e;
+text-shadow: 0 0 40px rgba(57,232,110,0.4);
+}
+
+/* End — top right, red */
+#end-corner {
+grid-area: end;
+align-items: flex-end;
+justify-content: flex-end;
+text-align: right;
+color: #e83939;
+text-shadow: 0 0 40px rgba(232,57,57,0.4);
+}
+
+/* Now — bottom centre, yellow */
+#now-corner {
+grid-area: now;
+align-items: center;
+justify-content: flex-start;
+text-align: center;
+color: #f0d000;
+text-shadow: 0 0 40px rgba(240,208,0,0.4);
+}
+
+#now-corner .time-display {
+letter-spacing: 0.05em;
+cursor: default;
+font-size: clamp(3rem, 10vw, 11rem);
+}
+#now-corner .time-display:hover { opacity: 1; }
+#now-corner .time-display::after { display: none; }
+
+/* Divider lines */
+.h-line {
+position: fixed;
+left: 0; right: 0;
+top: 50%;
+height: 1px;
+background: rgba(255,255,255,0.07);
+z-index: 0;
+}
+.v-line {
+position: fixed;
+top: 0; bottom: 50%;
+left: 50%;
+width: 1px;
+background: rgba(255,255,255,0.07);
+z-index: 0;
+}
+
+/* Glow blobs */
+.blob {
+position: fixed;
+border-radius: 50%;
+filter: blur(100px);
+opacity: 0.07;
+pointer-events: none;
+z-index: 0;
+}
+.blob-green { width: 40vw; height: 40vw; background: #39e86e; top: -10vw; left: -10vw; }
+.blob-red   { width: 40vw; height: 40vw; background: #e83939; top: -10vw; right: -10vw; }
+.blob-yellow{ width: 60vw; height: 30vw; background: #f0d000; bottom: -5vw; left: 50%; transform: translateX(-50%); }
+</style>
+
+</head>
+<body>
+
+<div class="blob blob-green"></div>
+<div class="blob blob-red"></div>
+<div class="blob blob-yellow"></div>
+<div class="h-line"></div>
+<div class="v-line"></div>
+
+<!-- START -->
+
+<div class="corner" id="start-corner">
+  <div class="label">Start</div>
+  <span class="time-display" id="start-display" title="Click to edit">09:00</span>
+</div>
+
+<!-- END -->
+
+<div class="corner" id="end-corner">
+  <div class="label">End</div>
+  <span class="time-display" id="end-display" title="Click to edit">17:00</span>
+</div>
+
+<!-- NOW -->
+
+<div class="corner" id="now-corner">
+  <div class="label">Now</div>
+  <span class="time-display" id="now-display">00:00:00</span>
+</div>
+
+<script>
+  // Editable time logic
+  function makeEditable(displayEl) {
+    displayEl.addEventListener('click', () => {
+      const current = displayEl.textContent.trim();
+      const input = document.createElement('input');
+      input.type = 'time';
+      input.className = 'time-input';
+      input.style.color = getComputedStyle(displayEl.parentElement).color;
+      input.value = current;
+      displayEl.replaceWith(input);
+      input.focus();
+
+      function commit() {
+        const val = input.value || current;
+        const [h, m] = val.split(':');
+        displayEl.textContent = `${h.padStart(2,'0')}:${m.padStart(2,'0')}`;
+        input.replaceWith(displayEl);
+      }
+
+      input.addEventListener('blur', commit);
+      input.addEventListener('keydown', e => {
+        if (e.key === 'Enter') { e.preventDefault(); commit(); }
+        if (e.key === 'Escape') {
+          displayEl.textContent = current;
+          input.replaceWith(displayEl);
+        }
+      });
+    });
+  }
+
+  makeEditable(document.getElementById('start-display'));
+  makeEditable(document.getElementById('end-display'));
+
+  // Ticking clock
+  function tick() {
+    const now = new Date();
+    const h = String(now.getHours()).padStart(2,'0');
+    const m = String(now.getMinutes()).padStart(2,'0');
+    const s = String(now.getSeconds()).padStart(2,'0');
+    document.getElementById('now-display').textContent = `${h}:${m}:${s}`;
+  }
+  tick();
+  setInterval(tick, 1000);
+</script>
+
+</body>
+</html>
